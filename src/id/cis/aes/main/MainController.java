@@ -17,9 +17,22 @@ import org.apache.commons.io.IOUtils;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.ResourceBundle;
+
+import javax.crypto.Cipher;
+import javax.crypto.CipherInputStream;
+import javax.crypto.CipherOutputStream;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 
 public class MainController implements Initializable {
 
@@ -67,6 +80,7 @@ public class MainController implements Initializable {
         mLabelInput.setText(inputFile.getName());
 
         try {
+            //inputByteArray = FileUtils.readFileToString(inputFile, Charset.defaultCharset()).getBytes();
             inputByteArray = FileUtils.readFileToByteArray(inputFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -81,13 +95,12 @@ public class MainController implements Initializable {
         try {
             String keyString = FileUtils.readFileToString(keyFile, Charset.defaultCharset());
 
-            if(!(keyString.length() == 32 || keyString.length() == 48 || keyString.length() == 64)){
+            if (!(keyString.length() == 32 || keyString.length() == 48 || keyString.length() == 64)) {
                 throw new LengthException();
             }
 
             this.keyByteArray = Hex.decodeHex(keyString.toCharArray());
 
-            System.out.println();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (DecoderException e) {
@@ -99,18 +112,60 @@ public class MainController implements Initializable {
             this.keyFile = null;
         }
 
-        if(keyFile == null) return;
+        if (keyFile == null) return;
 
         mLabelKey.setText(keyFile.getName());
         System.out.println();
     }
 
-    public void onEncryptClicked() {
+    public void onEncryptClicked() throws IOException {
+        SecretKeySpec key = new SecretKeySpec(keyByteArray, "AES");
+        try {
+            Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, key);
+            byte[] ivBytes = cipher.getIV();
+            ByteArrayInputStream bIn = new ByteArrayInputStream(inputByteArray);
+            CipherInputStream cIn = new CipherInputStream(bIn, cipher);
+            ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+
+            int ch;
+            while ((ch = cIn.read()) >= 0) {
+                bOut.write(ch);
+            }
+
+            bOut.write(ivBytes);
+            byte[] cipherText = bOut.toByteArray();
+
+            FileUtils.writeByteArrayToFile(new File("cipher.txt"), cipherText);
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+            e.printStackTrace();
+        }
 
     }
 
-    public void onDecryptClicked() {
+    public void onDecryptClicked() throws InvalidKeyException, IOException {
+        int n = inputByteArray.length;
+        byte[] ivBytes = Arrays.copyOfRange(inputByteArray, n - 16, n);
+        System.out.println(ivBytes.length);
+        byte[] newInputByteArray = Arrays.copyOfRange(inputByteArray, 0, n - 17);
+        SecretKeySpec key = new SecretKeySpec(keyByteArray, "AES");
+        IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
+        try {
+            Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
 
+            cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
+            ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+            CipherOutputStream cOut = new CipherOutputStream(bOut, cipher);
+            cOut.write(newInputByteArray);
+            cOut.close();
+            // to do
+            // write to file
+            //System.out.println("plain : " + new String(bOut.toByteArray()));
+
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
+            e.printStackTrace();
+        }
     }
 
     public void setMainStage(Stage mainStage) {
