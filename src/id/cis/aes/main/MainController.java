@@ -25,6 +25,7 @@ import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.ResourceBundle;
 
 import javax.crypto.Cipher;
@@ -76,11 +77,9 @@ public class MainController implements Initializable {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Choose Input File");
         this.inputFile = fileChooser.showOpenDialog(mainStage);
-
         mLabelInput.setText(inputFile.getName());
 
         try {
-            //inputByteArray = FileUtils.readFileToString(inputFile, Charset.defaultCharset()).getBytes();
             inputByteArray = FileUtils.readFileToByteArray(inputFile);
         } catch (IOException e) {
             e.printStackTrace();
@@ -115,7 +114,6 @@ public class MainController implements Initializable {
         if (keyFile == null) return;
 
         mLabelKey.setText(keyFile.getName());
-        System.out.println();
     }
 
     public void onEncryptClicked() throws IOException {
@@ -124,9 +122,16 @@ public class MainController implements Initializable {
             Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] ivBytes = cipher.getIV();
-            ByteArrayInputStream bIn = new ByteArrayInputStream(inputByteArray);
-            CipherInputStream cIn = new CipherInputStream(bIn, cipher);
+
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
+            bOut.write(inputFile.getName().concat(";").getBytes());
+            bOut.write(inputByteArray);
+
+            byte[] newInputByteArray = bOut.toByteArray();
+            bOut.reset();
+
+            ByteArrayInputStream bIn = new ByteArrayInputStream(newInputByteArray);
+            CipherInputStream cIn = new CipherInputStream(bIn, cipher);
 
             int ch;
             while ((ch = cIn.read()) >= 0) {
@@ -135,11 +140,18 @@ public class MainController implements Initializable {
 
             bOut.write(ivBytes);
             byte[] cipherText = bOut.toByteArray();
+            bOut.close();
+            bIn.close();
+            cIn.close();
 
             FileUtils.writeByteArrayToFile(new File("cipher.txt"), cipherText);
+            showSuccess("Encryption", "Encryption is successful!");
 
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
+        } catch (InvalidKeyException e) {
             e.printStackTrace();
+            showErrorAlert("Encryption Error!", "Invalid key!");
+        } catch (Exception e) {
+            showErrorAlert("Encryption Error!", "Enkripsi failed! :(");
         }
 
     }
@@ -147,8 +159,8 @@ public class MainController implements Initializable {
     public void onDecryptClicked() throws InvalidKeyException, IOException {
         int n = inputByteArray.length;
         byte[] ivBytes = Arrays.copyOfRange(inputByteArray, n - 16, n);
-        System.out.println(ivBytes.length);
-        byte[] newInputByteArray = Arrays.copyOfRange(inputByteArray, 0, n - 17);
+
+        byte[] newInputByteArray = Arrays.copyOfRange(inputByteArray, 0, n - 16);
         SecretKeySpec key = new SecretKeySpec(keyByteArray, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
         try {
@@ -159,12 +171,20 @@ public class MainController implements Initializable {
             CipherOutputStream cOut = new CipherOutputStream(bOut, cipher);
             cOut.write(newInputByteArray);
             cOut.close();
-            // to do
-            // write to file
-            //System.out.println("plain : " + new String(bOut.toByteArray()));
 
-        } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidAlgorithmParameterException e) {
-            e.printStackTrace();
+            String outputString = bOut.toString();
+            byte[] outputArray = bOut.toByteArray();
+            bOut.close();
+            int indexOfDelimiter = outputString.indexOf(';');
+            String fileName = outputString.substring(0, indexOfDelimiter);
+            outputArray = Arrays.copyOfRange(bOut.toByteArray(), indexOfDelimiter + 1, outputArray.length);
+
+            FileUtils.writeByteArrayToFile(new File(fileName), outputArray);
+
+            showSuccess("Decryption", "Decryption is successful!");
+
+        } catch (Exception e) {
+            showErrorAlert("Decryption Error!", "Decryption failed! :(");
         }
     }
 
@@ -175,6 +195,14 @@ public class MainController implements Initializable {
     private void showErrorAlert(String header, String content) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error!");
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    private void showSuccess(String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Success!");
         alert.setHeaderText(header);
         alert.setContentText(content);
         alert.showAndWait();
