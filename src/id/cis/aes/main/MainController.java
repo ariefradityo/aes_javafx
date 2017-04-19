@@ -40,25 +40,10 @@ import javax.crypto.spec.SecretKeySpec;
 public class MainController implements Initializable {
 
     @FXML
-    private AnchorPane mAnchorPane;
-
-    @FXML
-    private Button mBtnBrowseInput;
-
-    @FXML
     private Label mLabelInput;
 
     @FXML
-    private Button mBtnBrowseKey;
-
-    @FXML
     private Label mLabelKey;
-
-    @FXML
-    private Button mBtnEncrypt;
-
-    @FXML
-    private Button mBtnDecrypt;
 
     @FXML
     private Label mLabelMadeBy;

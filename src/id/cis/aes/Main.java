@@ -22,6 +22,7 @@ public class Main extends Application {
 
         primaryStage.setTitle("AES Project CIS");
         primaryStage.setScene(new Scene(root, 640, 480));
+        primaryStage.setResizable(false);
         primaryStage.show();
     }
 

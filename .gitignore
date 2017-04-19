@@ -73,3 +73,4 @@ target/classes/id/cis/aes/main/main.fxml
 *.iml
 cipher.txt
 input.txt
+target/
