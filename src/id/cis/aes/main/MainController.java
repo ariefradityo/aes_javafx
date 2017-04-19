@@ -129,8 +129,9 @@ public class MainController implements Initializable {
             int pad = 16 - inputByteArray.length % 16;
             byte[] padding = new byte[pad];
             Arrays.fill(padding, (byte) pad);
-            ArrayUtils.addAll(inputByteArray, padding);
+            inputByteArray = ArrayUtils.addAll(inputByteArray, padding);
 
+            // add file name
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
             bOut.write(inputFile.getName().concat(";").getBytes());
             bOut.write(inputByteArray);
@@ -146,7 +147,10 @@ public class MainController implements Initializable {
                 bOut.write(ch);
             }
 
+            //write ivBytes
             bOut.write(ivBytes);
+
+
             byte[] cipherText = bOut.toByteArray();
             bOut.close();
             bIn.close();
@@ -159,6 +163,7 @@ public class MainController implements Initializable {
             e.printStackTrace();
             showErrorAlert("Encryption Error!", "Invalid key!");
         } catch (Exception e) {
+            e.printStackTrace();
             showErrorAlert("Encryption Error!", "Encryption failed! :(");
         }
 
@@ -166,6 +171,8 @@ public class MainController implements Initializable {
 
     public void onDecryptClicked() throws InvalidKeyException, IOException {
         int n = inputByteArray.length;
+
+        //get ivBytes
         byte[] ivBytes = Arrays.copyOfRange(inputByteArray, n - 16, n);
 
         byte[] newInputByteArray = Arrays.copyOfRange(inputByteArray, 0, n - 16);
@@ -183,18 +190,27 @@ public class MainController implements Initializable {
             String outputString = bOut.toString();
             byte[] outputArray = bOut.toByteArray();
             bOut.close();
+
+            //get file name
             int indexOfDelimiter = outputString.indexOf(';');
             String fileName = outputString.substring(0, indexOfDelimiter);
+
+            // get content
             outputArray = Arrays.copyOfRange(bOut.toByteArray(), indexOfDelimiter + 1, outputArray.length);
+
+
+            // remove padding
             int pad = outputArray[outputArray.length-1];
             byte[] resultArray = new byte[outputArray.length - pad];
             System.arraycopy(outputArray, 0, resultArray, 0, resultArray.length);
 
+            //Write content to file
             FileUtils.writeByteArrayToFile(new File(fileName), resultArray);
 
             showSuccess("Decryption", "Decryption is successful!");
 
         } catch (Exception e) {
+            e.printStackTrace();
             showErrorAlert("Decryption Error!", "Decryption failed! :(");
         }
     }
