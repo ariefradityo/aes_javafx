@@ -1,5 +1,6 @@
 package id.cis.aes.main;
 
+import com.sun.deploy.util.ArrayUtil;
 import id.cis.aes.exception.LengthException;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -13,6 +14,7 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.awt.event.ActionEvent;
 import java.io.File;
@@ -119,9 +121,15 @@ public class MainController implements Initializable {
     public void onEncryptClicked() throws IOException {
         SecretKeySpec key = new SecretKeySpec(keyByteArray, "AES");
         try {
-            Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             byte[] ivBytes = cipher.getIV();
+
+            // add padding
+            int pad = 16 - inputByteArray.length % 16;
+            byte[] padding = new byte[pad];
+            Arrays.fill(padding, (byte) pad);
+            ArrayUtils.addAll(inputByteArray, padding);
 
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
             bOut.write(inputFile.getName().concat(";").getBytes());
@@ -164,7 +172,7 @@ public class MainController implements Initializable {
         SecretKeySpec key = new SecretKeySpec(keyByteArray, "AES");
         IvParameterSpec ivSpec = new IvParameterSpec(ivBytes);
         try {
-            Cipher cipher = Cipher.getInstance("AES/CTR/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
 
             cipher.init(Cipher.DECRYPT_MODE, key, ivSpec);
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -178,8 +186,11 @@ public class MainController implements Initializable {
             int indexOfDelimiter = outputString.indexOf(';');
             String fileName = outputString.substring(0, indexOfDelimiter);
             outputArray = Arrays.copyOfRange(bOut.toByteArray(), indexOfDelimiter + 1, outputArray.length);
+            int pad = outputArray[outputArray.length-1];
+            byte[] resultArray = new byte[outputArray.length - pad];
+            System.arraycopy(outputArray, 0, resultArray, 0, resultArray.length);
 
-            FileUtils.writeByteArrayToFile(new File(fileName), outputArray);
+            FileUtils.writeByteArrayToFile(new File(fileName), resultArray);
 
             showSuccess("Decryption", "Decryption is successful!");
 
