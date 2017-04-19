@@ -70,7 +70,7 @@ public class MainController implements Initializable {
     byte[] inputByteArray;
 
     public void initialize(URL location, ResourceBundle resources) {
-        mLabelMadeBy.setText("Dibuat oleh:\nAndri Kurniawan (13063)\nArief Radityo (1306381875)");
+        mLabelMadeBy.setText("Dibuat oleh:\nAndri Kurniawan (1306382064)\nArief Radityo (1306381875)");
     }
 
     public void onInputBrowseClicked() {
@@ -151,7 +151,7 @@ public class MainController implements Initializable {
             e.printStackTrace();
             showErrorAlert("Encryption Error!", "Invalid key!");
         } catch (Exception e) {
-            showErrorAlert("Encryption Error!", "Enkripsi failed! :(");
+            showErrorAlert("Encryption Error!", "Encryption failed! :(");
         }
 
     }
