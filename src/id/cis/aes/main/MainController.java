@@ -114,14 +114,14 @@ public class MainController implements Initializable {
             int pad = 16 - inputByteArray.length % 16;
             byte[] padding = new byte[pad];
             Arrays.fill(padding, (byte) pad);
-            inputByteArray = ArrayUtils.addAll(inputByteArray, padding);
+            byte[] newInputByteArray = ArrayUtils.addAll(inputByteArray, padding);
 
             // add file name
             ByteArrayOutputStream bOut = new ByteArrayOutputStream();
             bOut.write(inputFile.getName().concat(";").getBytes());
-            bOut.write(inputByteArray);
+            bOut.write(newInputByteArray);
 
-            byte[] newInputByteArray = bOut.toByteArray();
+            newInputByteArray = bOut.toByteArray();
             bOut.reset();
 
             ByteArrayInputStream bIn = new ByteArrayInputStream(newInputByteArray);
